@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>지니지구 · 모바일 검수함</title><style>
+:root{font-family:system-ui,-apple-system,sans-serif;color:#e8edf6;background:#0f172a}body{margin:0;padding:20px;max-width:760px;margin:auto}
+input,textarea,button{font:inherit;box-sizing:border-box;border-radius:9px;padding:12px}input,textarea{background:#1e293b;color:white;border:1px solid #475569;width:100%;margin:7px 0}textarea{min-height:220px}
+button{background:#38bdf8;border:0;color:#0f172a;font-weight:700;cursor:pointer;margin:5px 4px 5px 0}button.secondary{background:#334155;color:#e2e8f0}
+article{border:1px solid #334155;padding:15px;margin:12px 0;border-radius:12px}small,.muted{color:#aab7c9}label{display:block;margin-top:12px}h1{font-size:24px}h2{font-size:19px}
+[hidden]{display:none!important}</style></head><body>
+<h1>지니지구 · 모바일 검수함</h1><p class="muted">클라우드 초안 편집·저장 · 외부 플랫폼 자동 발행 없음</p>
+<section id="setup"><h2>최초 연결</h2><p>별도 Supabase 프로젝트의 URL과 publishable/anon 키를 입력하세요. 비밀 서비스 키는 입력하지 마세요.</p>
+<input id="url" placeholder="https://프로젝트.supabase.co" autocomplete="off">
+<input id="key" placeholder="Supabase publishable key (sb_publishable_... 또는 anon JWT)" autocomplete="off">
+<button id="saveConfig">이 기기에 연결 정보 저장</button></section>
+<section id="auth" hidden><h2>로그인</h2><input id="email" type="email" placeholder="이메일"><input id="password" type="password" placeholder="비밀번호">
+<button id="login">로그인</button><button id="reset" class="secondary">연결 정보 변경</button></section>
+<section id="editor" hidden><p id="identity"></p><button id="logout" class="secondary">로그아웃</button>
+<h2>검수 원고</h2><input id="title" placeholder="제목"><textarea id="body" placeholder="본문을 입력하거나 붙여넣으세요"></textarea>
+<button id="new">새 원고</button><button id="save">초안 저장</button><button id="review">검수 완료 표시</button>
+<p class="muted">검수 완료는 내부 상태만 변경하며 SNS나 블로그에 게시하지 않습니다.</p>
+<h2>저장된 원고</h2><div id="items"></div></section><p id="status" role="status"></p>
+<script type="module" src="./app.js"></script></body></html>
