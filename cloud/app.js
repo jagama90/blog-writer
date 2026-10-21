@@ -35,3 +35,37 @@ $('copyNaverTitle').onclick=async()=>{try{await navigator.clipboard.writeText($(
 $('openNaver').onclick=()=>{window.open('https://blog.naver.com/','_blank','noopener,noreferrer');status('네이버 블로그를 열었습니다. 로그인 후 글쓰기를 선택하세요.')};
 $('naverReady').onclick=()=>{const state=$('naverState');if(!['checkFacts','checkRights','checkText'].every(id=>$(id).checked)){state.textContent='검수 항목 3개를 모두 확인해 주세요.';return;}if(!$('naverTitle').value.trim()||!$('naver').value.trim()){state.textContent='네이버 제목과 본문을 입력해 주세요.';return;}state.textContent='발행 준비 완료 · 네이버에 실제 게시된 것은 아닙니다.';try{localStorage.setItem(storageKey,JSON.stringify(snapshot()));}catch(e){status('준비 완료, 단 기기 저장 실패: '+e.message);return;}status('네이버 발행 준비 완료로 표시했습니다. 실제 발행은 하지 않았습니다.');};
 ['naverTitle','naver','checkFacts','checkRights','checkText'].forEach(id=>$(id).addEventListener('input',()=>{$('naverState').textContent='수정됨 · 발행 준비 재확인 필요';}));
+
+function researchInstruction(){
+ const d=input();
+ return [
+ '나는 SOLO/나솔사계 콘텐츠 편집자처럼 조사하고 작성해 줘.',
+ '주제: '+(d.topic||'[여기에 주제 입력]'),
+ d.angle?'원하는 관점: '+d.angle:'',
+ d.sources.length?'우선 확인할 출처:\n'+d.sources.join('\n'):'',
+ d.facts.length?'사용자가 이미 확인한 사실:\n'+d.facts.join('\n'):'',
+ '웹에서 최신 관련 원문과 날짜를 직접 확인해. 검색할 수 없다면 검색했다고 주장하지 말고 검증 불가라고 알려줘.',
+ '방송 장면, 인물 발언, 회차, 수치, 날짜를 추측하거나 창작하지 마. 확인 안 된 주장은 본문에 넣지 마.',
+ '출처 링크는 실제 열어 확인한 URL만 넣어. 직접 인용은 짧게, 원문을 과도하게 복제하지 마.',
+ '블로그용 7~8문단의 독창적인 한국어 원고를 작성하고, 사실과 개인 해석을 구분해.',
+ '반드시 아래 JSON 객체 하나만 코드블록 없이 반환해. 키는 title(string), body(string), sources(string[]), facts(string[]), angle(string).',
+ '검증 가능한 근거가 부족하면 body에 발행 불가 및 부족한 근거를 명시하고 사실을 꾸며내지 마.',
+ ].filter(Boolean).join('\n\n');
+}
+$('researchPrompt').onclick=async()=>{const prompt=researchInstruction();try{await navigator.clipboard.writeText(prompt);status('조사·집필 요청문을 복사했습니다. ChatGPT에 붙여넣고 답변 JSON을 아래 칸에 가져오세요.')}catch{status('복사 권한이 거부됐습니다. HTTPS 환경에서 다시 시도해 주세요.')}};
+$('openChatGPT').onclick=()=>window.open('https://chatgpt.com/','_blank','noopener,noreferrer');
+$('importAI').onclick=()=>{
+ let d;try{let raw=$('aiResult').value.trim();raw=raw.replace(/^\x60\x60\x60(?:json)?\s*/i,'').replace(/\s*\x60\x60\x60$/,'');d=JSON.parse(raw);}catch{return status('유효한 JSON 형식이 아닙니다. ChatGPT 응답 전체를 확인해 주세요.');}
+ if(!d||typeof d.title!=='string'||!d.title.trim()||typeof d.body!=='string'||!d.body.trim())return status('JSON에 title과 body 문자열이 필요합니다.');
+ if(d.sources!==undefined&&(!Array.isArray(d.sources)||!d.sources.every(v=>typeof v==='string')))return status('sources는 문자열 배열이어야 합니다.');
+ if(d.facts!==undefined&&(!Array.isArray(d.facts)||!d.facts.every(v=>typeof v==='string')))return status('facts는 문자열 배열이어야 합니다.');
+ $('topic').value=d.title;$('naverTitle').value=d.title;$('naver').value=d.body;
+ if(Array.isArray(d.sources))$('sources').value=d.sources.join('\n');
+ if(Array.isArray(d.facts))$('facts').value=d.facts.join('\n');
+ if(typeof d.angle==='string')$('angle').value=d.angle;
+ ['checkFacts','checkRights','checkText'].forEach(id=>$(id).checked=false);
+ $('naverState').textContent='AI 원고 가져옴 · 사실·저작권 검수 필요 · 게시되지 않음';
+ $('reviewState').textContent='검수 전 · 외부 게시 없음';
+ $('results').hidden=false;
+ save();status('AI 원고를 가져왔습니다. 기존 플랫폼별 초안은 자동으로 덮어쓰지 않았습니다. 사실과 출처를 검수해 주세요.');
+};
