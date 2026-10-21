@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { LayoutDashboard, FileText, BarChart2, BookOpen, Settings, ScrollText, UserCheck } from 'lucide-react'
+import { LayoutDashboard, Clapperboard, FileText, BarChart2, BookOpen, Settings, ScrollText, UserCheck } from 'lucide-react'
 import Overview from './pages/Overview.jsx'
+import Nassol from './pages/Nassol.jsx'
 import Content from './pages/Content.jsx'
 import Analytics from './pages/Analytics.jsx'
 import Novel from './pages/Novel.jsx'
@@ -10,6 +11,7 @@ import Assist from './pages/Assist.jsx'
 
 const TABS = [
   { id: 'overview', label: '개요', icon: LayoutDashboard, component: Overview },
+  { id: 'nassol', label: '나는 SOLO', icon: Clapperboard, component: Nassol },
   { id: 'content', label: '콘텐츠', icon: FileText, component: Content },
   { id: 'assist', label: '수동모드', icon: UserCheck, component: Assist },
   { id: 'analytics', label: '분석', icon: BarChart2, component: Analytics },
