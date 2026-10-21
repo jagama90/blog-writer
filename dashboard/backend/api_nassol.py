@@ -56,7 +56,7 @@ def run_data(data: dict) -> Path:
 @router.get("/nassol/media/{job_id}/{filename}")
 def download_media(job_id: str, filename: str):
     import re
-    if not re.fullmatch(r"\\d{8}_\\d{6}_\\d{6}", job_id):
+    if not re.fullmatch(r"\d{8}_\d{6}_\d{6}", job_id):
         raise HTTPException(status_code=400, detail="Invalid job")
     if filename not in {*(f"card_{i:02d}.png" for i in range(1, 6)), "nassol_short.mp4"}:
         raise HTTPException(status_code=400, detail="Invalid file")
