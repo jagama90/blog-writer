@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { LayoutDashboard, Clapperboard, FileText, BarChart2, BookOpen, Settings, ScrollText, UserCheck } from 'lucide-react'
 import Overview from './pages/Overview.jsx'
 import Nassol from './pages/Nassol.jsx'
@@ -22,7 +22,14 @@ const TABS = [
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('overview')
-  const [systemStatus, setSystemStatus] = useState('ok') // ok | warn | error
+  const [systemStatus, setSystemStatus] = useState('warn') // ok | warn | error
+
+  useEffect(() => {
+    fetch('/api/diagnostics')
+      .then(response => response.json())
+      .then(info => setSystemStatus(info.writing_status === 'missing_cli' || info.writing_status === 'unverified' ? 'warn' : 'ok'))
+      .catch(() => setSystemStatus('error'))
+  }, [])
 
   const ActiveComponent = TABS.find(t => t.id === activeTab)?.component || Overview
 
