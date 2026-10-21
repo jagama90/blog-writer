@@ -69,3 +69,89 @@ $('importAI').onclick=()=>{
  $('results').hidden=false;
  save();status('AI 원고를 가져왔습니다. 기존 플랫폼별 초안은 자동으로 덮어쓰지 않았습니다. 사실과 출처를 검수해 주세요.');
 };
+
+/* Optional cloud synchronization. Tokens live only in sessionStorage; passwords are never persisted.
+   Supabase RLS enforces user ownership. No automatic overwriting of a remote draft. */
+const syncConfigKey='nassol_supabase_public_config_v1';
+let syncToken='',syncUser='',syncDraftId='',syncRemoteUpdated='';
+let syncList=[];
+function syncConfig(){return {url:$('syncUrl').value.trim().replace(/\/$/,''),key:$('syncKey').value.trim()}}
+function syncMessage(s){$('syncStatus').textContent=s}
+function syncHeaders(token){const c=syncConfig();return {'apikey':c.key,'Authorization':'Bearer '+(token||c.key),'Content-Type':'application/json'}}
+function syncValid(){const c=syncConfig();if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(c.url)||!c.key||!(/^(sb_publishable_|eyJ)/.test(c.key))){syncMessage('Supabase URL과 publishable/anon 공개 키를 확인하세요. 비밀 키를 입력하지 마세요.');return false;}return true}
+async function syncRequest(path,options={}){
+ const c=syncConfig();const res=await fetch(c.url+path,{...options,headers:{...syncHeaders(syncToken),...(options.headers||{})}});
+ const raw=await res.text();let data;try{data=raw?JSON.parse(raw):null}catch{data=raw}
+ if(!res.ok)throw new Error(typeof data==='object'?(data?.msg||data?.message||data?.error_description||data?.error||'HTTP '+res.status):'HTTP '+res.status);
+ return data;
+}
+function syncAuthDisplay(){$('syncAuthState').textContent=syncUser?'클라우드 로그인됨 · '+$('syncEmail').value+' · 다른 기기에서도 같은 계정으로 로그인하세요':'클라우드 미로그인 · 현재 기기 저장만 가능'}
+$('saveSyncConfig').onclick=()=>{if(!syncValid())return;localStorage.setItem(syncConfigKey,JSON.stringify(syncConfig()));syncMessage('공개 연결 정보 저장 완료. 다른 기기에서는 다시 입력해야 합니다.')};
+async function syncAuthenticate(signup=false){
+ if(!syncValid())return;const email=$('syncEmail').value.trim(),password=$('syncPassword').value;
+ if(!email||!password)return syncMessage('이메일과 비밀번호를 입력하세요.');
+ try{
+  const path=signup?'/auth/v1/signup':'/auth/v1/token?grant_type=password';
+  const data=await syncRequest(path,{method:'POST',body:JSON.stringify({email,password})});
+  if(signup&&!data.access_token){syncMessage('가입 요청 완료. 이메일 확인이 필요할 수 있습니다. 확인 후 로그인하세요.');return}
+  syncToken=data.access_token;syncUser=data.user?.id||'';if(!syncToken||!syncUser)throw new Error('인증 정보를 받지 못했습니다.');
+  sessionStorage.setItem('nassol_sync_session',JSON.stringify({token:syncToken,user:syncUser,email}));
+  $('syncPassword').value='';syncAuthDisplay();syncMessage('로그인 성공. 클라우드 원고 저장과 불러오기를 사용할 수 있습니다.');
+ }catch(e){syncMessage('인증 실패: '+e.message)}
+}
+$('syncLogin').onclick=()=>syncAuthenticate(false);$('syncSignup').onclick=()=>syncAuthenticate(true);
+$('syncLogout').onclick=()=>{syncToken='';syncUser='';syncDraftId='';syncRemoteUpdated='';sessionStorage.removeItem('nassol_sync_session');syncAuthDisplay();syncMessage('로그아웃했습니다.')};
+function syncPayload(){return snapshot()}
+function syncLoadPayload(d){
+ if(!d||typeof d!=='object'||!d.input)return false;
+ $('topic').value=d.input.topic||'';$('sources').value=(d.input.sources||[]).join('\n');
+ $('facts').value=(d.input.facts||[]).join('\n');$('angle').value=d.input.angle||'';
+ ids.forEach(id=>$(id).value=d.outputs?.[id]||'');$('naverTitle').value=d.naverTitle||d.input.topic||'';
+ ['checkFacts','checkRights','checkText'].forEach((id,i)=>$(id).checked=Boolean(d.naverChecks?.[i]));
+ $('naverState').textContent=d.naverState||'준비 전 · 네이버에 게시되지 않음';
+ $('reviewState').textContent=d.review||'검수 전 · 외부 게시 없음';
+ $('results').hidden=!ids.some(id=>$(id).value);count();save();return true;
+}
+$('syncUpload').onclick=async()=>{
+ if(!syncToken||!syncUser)return syncMessage('먼저 클라우드에 로그인하세요.');
+ if(!$('topic').value.trim()&&!$('naverTitle').value.trim())return syncMessage('저장할 원고 제목이 없습니다.');
+ try{
+  const title=($('naverTitle').value||$('topic').value).trim();
+  const data={title,body:$('naver').value,status:'draft',payload:syncPayload()};
+  if(syncDraftId){
+   const updated=await syncRequest('/rest/v1/editorial_drafts?id=eq.'+encodeURIComponent(syncDraftId)+'&updated_at=eq.'+encodeURIComponent(syncRemoteUpdated),{method:'PATCH',headers:{'Prefer':'return=representation'},body:JSON.stringify({...data,updated_at:new Date().toISOString()})});
+   if(!updated?.length)return syncMessage('다른 기기에서 수정된 원고입니다. 목록을 새로고침하고 최신 버전을 확인한 뒤 저장하세요.');
+   syncRemoteUpdated=updated[0].updated_at;syncMessage('클라우드에 변경 내용을 저장했습니다.');
+  }else{
+   const created=await syncRequest('/rest/v1/editorial_drafts',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify({...data,user_id:syncUser})});
+   if(!created?.[0]?.id)throw new Error('원고 ID를 받지 못했습니다.');
+   syncDraftId=created[0].id;syncRemoteUpdated=created[0].updated_at;syncMessage('새 원고를 클라우드에 저장했습니다.');
+  }
+ }catch(e){syncMessage('클라우드 저장 실패: '+e.message)}
+};
+$('syncRefresh').onclick=async()=>{
+ if(!syncToken)return syncMessage('먼저 클라우드에 로그인하세요.');
+ try{
+  syncList=await syncRequest('/rest/v1/editorial_drafts?select=id,title,updated_at&order=updated_at.desc&limit=50');
+  const select=$('syncDrafts');select.replaceChildren();
+  const opt=document.createElement('option');opt.value='';opt.textContent='불러올 원고 선택';select.append(opt);
+  for(const d of syncList){const o=document.createElement('option');o.value=d.id;o.textContent=d.title+' · '+new Date(d.updated_at).toLocaleString('ko-KR');select.append(o)}
+  syncMessage('클라우드 원고 '+syncList.length+'개를 불러왔습니다.');
+ }catch(e){syncMessage('목록 조회 실패: '+e.message)}
+};
+$('syncDownload').onclick=async()=>{
+ const id=$('syncDrafts').value;if(!id||!syncToken)return syncMessage('로그인 후 원고를 선택하세요.');
+ if(!confirm('현재 화면의 편집 내용을 선택한 클라우드 원고로 교체할까요? 저장하지 않은 변경 사항은 사라집니다.'))return;
+ try{
+  const data=await syncRequest('/rest/v1/editorial_drafts?id=eq.'+encodeURIComponent(id)+'&select=id,title,body,payload,updated_at&limit=1');
+  if(!data?.length)throw new Error('원고를 찾을 수 없습니다.');
+  const d=data[0];if(!syncLoadPayload(d.payload)){ $('topic').value=d.title;$('naverTitle').value=d.title;$('naver').value=d.body;$('results').hidden=false; }
+  syncDraftId=d.id;syncRemoteUpdated=d.updated_at;syncMessage('선택한 원고를 불러왔습니다. 수정 후 클라우드 저장을 눌러 동기화하세요.');
+ }catch(e){syncMessage('원고 불러오기 실패: '+e.message)}
+};
+try{
+ const c=JSON.parse(localStorage.getItem(syncConfigKey)||'null');if(c){$('syncUrl').value=c.url||$('syncUrl').value;$('syncKey').value=c.key||''}
+ const s=JSON.parse(sessionStorage.getItem('nassol_sync_session')||'null');
+ if(s?.token&&s?.user){syncToken=s.token;syncUser=s.user;$('syncEmail').value=s.email||''}
+}catch{}
+syncAuthDisplay();
