@@ -32,6 +32,7 @@ from dashboard.backend import (
     api_logs,
     api_assist,
     api_nassol,
+    api_diagnostics,
 )
 
 app = FastAPI(title="The 4th Path — Control Panel", version="1.0.0")
@@ -62,6 +63,7 @@ app.include_router(api_cost.router, prefix="/api")
 app.include_router(api_logs.router, prefix="/api")
 app.include_router(api_assist.router, prefix="/api")
 app.include_router(api_nassol.router, prefix="/api")
+app.include_router(api_diagnostics.router, prefix="/api")
 
 @app.get("/api/health")
 async def health():
