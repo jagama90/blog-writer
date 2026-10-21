@@ -9,6 +9,7 @@ function validConfig(c){return c && /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(
 async function request(path,{method='GET',body,auth=true}={}){
  const headers={'apikey':config.key,'Content-Type':'application/json'};
  if(auth && session) headers.Authorization='Bearer '+session.access_token;
+ if(method==='POST' && path.startsWith('/rest/v1/')) headers.Prefer='return=representation';
  const response=await fetch(config.url+path,{method,headers,body:body===undefined?undefined:JSON.stringify(body)});
  const raw=await response.text();let data;try{data=JSON.parse(raw)}catch{data=raw}
  if(!response.ok) throw Error((data && (data.msg||data.message||data.error_description||data.error)) || 'HTTP '+response.status);
