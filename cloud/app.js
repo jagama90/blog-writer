@@ -2,7 +2,7 @@
 const $=id=>document.getElementById(id);
 const ids=['naver','x','instagram','youtube'];
 const storageKey='nassol_editorial_workbench_v1';
-const status=msg=>$('status').textContent=msg;
+const status=msg=>{ $('status').textContent=msg; };
 const lines=s=>s.split(/\r?\n/).map(v=>v.trim()).filter(Boolean);
 const safe=s=>String(s||'').trim();
 const clip=(s,max)=>s.length<=max?s:s.slice(0,max-1).trimEnd()+'…';
@@ -33,5 +33,5 @@ $('x').addEventListener('input',count);
 
 $('copyNaverTitle').onclick=async()=>{try{await navigator.clipboard.writeText($('naverTitle').value);status('네이버 제목을 복사했습니다.')}catch{$('naverTitle').focus();$('naverTitle').select();status('선택된 제목을 직접 복사해 주세요.')}};
 $('openNaver').onclick=()=>{window.open('https://blog.naver.com/','_blank','noopener,noreferrer');status('네이버 블로그를 열었습니다. 로그인 후 글쓰기를 선택하세요.')};
-$('naverReady').onclick=()=>{if(!['checkFacts','checkRights','checkText'].every(id=>$(id).checked))return status('세 가지 발행 전 검수 항목을 모두 확인해 주세요.');if(!$('naverTitle').value.trim()||!$('naver').value.trim())return status('네이버 제목과 본문이 필요합니다.');$('naverState').textContent='발행 준비 완료 · 네이버에 실제 게시된 것은 아닙니다.';save();};
+$('naverReady').onclick=()=>{const state=$('naverState');if(!['checkFacts','checkRights','checkText'].every(id=>$(id).checked)){state.textContent='검수 항목 3개를 모두 확인해 주세요.';return;}if(!$('naverTitle').value.trim()||!$('naver').value.trim()){state.textContent='네이버 제목과 본문을 입력해 주세요.';return;}state.textContent='발행 준비 완료 · 네이버에 실제 게시된 것은 아닙니다.';try{localStorage.setItem(storageKey,JSON.stringify(snapshot()));}catch(e){status('준비 완료, 단 기기 저장 실패: '+e.message);return;}status('네이버 발행 준비 완료로 표시했습니다. 실제 발행은 하지 않았습니다.');};
 ['naverTitle','naver','checkFacts','checkRights','checkText'].forEach(id=>$(id).addEventListener('input',()=>{$('naverState').textContent='수정됨 · 발행 준비 재확인 필요';}));
