@@ -12,6 +12,7 @@ export default function Nassol() {
   const [raw, setRaw] = useState(JSON.stringify(SAMPLE, null, 2))
   const [draft, setDraft] = useState('')
   const [title, setTitle] = useState('')
+  const [media, setMedia] = useState({cards: [], video: null, media_error: null})
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   async function generate() {
@@ -21,7 +22,7 @@ export default function Nassol() {
       const response = await fetch('/api/nassol/draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       const data = await response.json()
       if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail))
-      setDraft(data.draft); setTitle(data.title)
+      setDraft(data.draft); setTitle(data.title); setMedia({cards: data.cards || [], video: data.video, media_error: data.media_error})
     } catch (e) { setError(String(e.message || e)) }
     finally { setBusy(false) }
   }
@@ -31,6 +32,9 @@ export default function Nassol() {
     <textarea aria-label="나솔 원고 입력 JSON" className="w-full h-72 p-3 bg-card border border-border rounded font-mono text-sm" value={raw} onChange={e => setRaw(e.target.value)} />
     <button disabled={busy} onClick={generate} className="px-4 py-2 rounded bg-accent text-black disabled:opacity-50">{busy ? '생성 중...' : '검수용 원고 생성'}</button>
     {error && <p role="alert" className="text-red-400">{error}</p>}
+    {media.media_error && <p role="alert" className="text-yellow-400">미디어 생성 안내: {media.media_error}</p>}
+    {media.cards.length > 0 && <section className="space-y-3"><h2 className="font-semibold">검수용 카드뉴스 5장 (1:1)</h2><div className="grid grid-cols-2 md:grid-cols-3 gap-3">{media.cards.map((url, index) => <a key={url} href={url} download><img src={url} alt={`카드뉴스 ${index + 1}`} className="w-full rounded border border-border" /><span className="text-xs">카드 {index + 1} 저장</span></a>)}</div></section>}
+    {media.video && <section className="space-y-2"><h2 className="font-semibold">세로 쇼츠 MP4 (무음 · 검수용)</h2><video controls className="max-w-xs w-full" src={media.video} /><a href={media.video} download className="underline block">MP4 저장</a></section>}
     {draft && <section className="space-y-3"><h2 className="font-semibold">{title}</h2><p className="text-sm text-yellow-400">미검증 초안 · 자동 발행되지 않음 · 이미지 사용권 별도 확인</p><pre className="whitespace-pre-wrap bg-card border border-border rounded p-4 text-sm">{draft}</pre></section>}
   </div>
 }
