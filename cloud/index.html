@@ -4,7 +4,20 @@
 :root{font-family:system-ui,-apple-system,sans-serif;color:#e8edf6;background:#0f172a}*{box-sizing:border-box}body{margin:0 auto;padding:18px;max-width:860px}input,textarea,button,select{font:inherit;border-radius:9px;padding:11px}input,textarea,select{background:#1e293b;color:white;border:1px solid #475569;width:100%;margin:6px 0}textarea{min-height:110px;resize:vertical}button{background:#38bdf8;border:0;color:#0f172a;font-weight:700;cursor:pointer;margin:5px 5px 5px 0}button.secondary{background:#334155;color:#e2e8f0}article,section{border:1px solid #334155;padding:15px;margin:14px 0;border-radius:12px}small,.muted{color:#aab7c9}label{display:block;margin-top:12px}h1{font-size:24px}h2{font-size:19px}h3{font-size:16px}textarea.output{min-height:210px}[hidden]{display:none!important}.notice{border-left:3px solid #38bdf8;padding-left:10px}.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:140px}a{color:#7dd3fc}</style></head><body>
 <h1>지니지구 · 콘텐츠 스튜디오</h1><p class="muted">자료 입력 → 플랫폼별 초안 생성 → 수정·검수 → 복사/내보내기</p>
 <p class="notice">로그인 없이 사용 가능. ChatGPT에서 최신 자료 조사·원고 집필을 요청하고 결과를 이곳에 가져올 수 있습니다. 사이트 자체에는 AI API나 자동 검색이 연결되지 않았으며 이미지·영상 제작 및 자동 발행도 미구현입니다.</p>
-<section><h2>1. 콘텐츠 자료</h2>
+<section><h2>PC · 모바일 원고 동기화</h2><p class="muted">동일한 Supabase 계정으로 로그인하면 두 기기에서 원고를 저장하고 불러올 수 있어요. 자동 백그라운드 동기화는 아직 지원하지 않습니다. 클라우드에 저장할 때만 데이터가 전송됩니다.</p>
+<details><summary>클라우드 연결 설정 · 처음 한 번</summary>
+<label for="syncUrl">Supabase 프로젝트 URL</label><input id="syncUrl" value="https://iefzffwydvqnleukmljj.supabase.co">
+<label for="syncKey">Supabase publishable/anon 키 (secret/service_role 금지)</label><input id="syncKey" placeholder="sb_publishable_... 또는 anon 공개 키" autocomplete="off">
+<button id="saveSyncConfig" class="secondary">연결 정보 저장</button>
+<p class="muted">Supabase → Project Settings → API Keys에서 공개용 키를 확인하세요. 이 키는 공개 키이며 원고 보호는 로그인과 데이터베이스 RLS로 처리합니다.</p></details>
+<div class="row"><div><label for="syncEmail">이메일</label><input id="syncEmail" type="email" autocomplete="username" placeholder="email@example.com"></div><div><label for="syncPassword">비밀번호</label><input id="syncPassword" type="password" autocomplete="current-password" placeholder="비밀번호"></div></div>
+<div class="row"><button id="syncLogin">로그인</button><button id="syncSignup" class="secondary">계정 만들기</button><button id="syncLogout" class="secondary">로그아웃</button></div>
+<p id="syncAuthState" class="muted" role="status">클라우드 미연결 · 현재 기기 저장만 가능</p>
+<div class="row"><button id="syncUpload">현재 원고 클라우드 저장</button><button id="syncRefresh" class="secondary">클라우드 원고 목록</button></div>
+<label for="syncDrafts">클라우드 원고 선택</label><select id="syncDrafts"><option value="">원고 목록을 먼저 불러오세요</option></select>
+<button id="syncDownload" class="secondary">선택한 원고 불러오기</button>
+<p id="syncStatus" class="muted" role="status"></p>
+</section><section><h2>1. 콘텐츠 자료</h2>
 <label for="topic">주제·제목</label><input id="topic" placeholder="예: 나는 SOLO 00기 방송 주요 장면">
 <label for="sources">출처 URL (한 줄에 하나)</label><textarea id="sources" placeholder="https://..."></textarea>
 <label for="facts">확인된 사실·인용·수치 (직접 확인한 내용만)</label><textarea id="facts" placeholder="방송에서 확인된 장면, 발언, 숫자 등을 줄별로 적어 주세요"></textarea>
@@ -30,4 +43,4 @@
 <article><h3>인스타그램 카드뉴스 문안</h3><textarea class="output" id="instagram"></textarea><button data-copy="instagram" class="secondary">복사</button></article>
 <article><h3>유튜브 쇼츠 대본</h3><textarea class="output" id="youtube"></textarea><button data-copy="youtube" class="secondary">복사</button></article>
 <button id="saveLocal">이 기기에 저장</button><button id="export" class="secondary">결과물 JSON 내려받기</button><button id="approve" class="secondary">검수 완료 표시</button><p id="reviewState" class="muted">검수 전 · 외부 게시 없음</p></section>
-<p id="status" role="status"></p><script src="./app.js?v=20261022-ai-handoff-1" defer></script></body></html>
+<p id="status" role="status"></p><script src="./app.js?v=20261022-cloud-sync-1" defer></script></body></html>
