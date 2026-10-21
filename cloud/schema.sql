@@ -1,4 +1,4 @@
--- Execute ONLY in a new, dedicated Supabase project.
+-- Applied to existing kb-price-db project after verifying no name collision.\n-- This migration creates only editorial_drafts and its policies.\n-- Do not rerun against a database where these policies already exist.
 create table if not exists public.editorial_drafts (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
