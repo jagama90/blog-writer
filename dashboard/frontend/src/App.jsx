@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
-import { LayoutDashboard, FileText, BarChart2, BookOpen, Settings, ScrollText, UserCheck } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { LayoutDashboard, Clapperboard, FileText, BarChart2, BookOpen, Settings, ScrollText, UserCheck } from 'lucide-react'
 import Overview from './pages/Overview.jsx'
+import Nassol from './pages/Nassol.jsx'
 import Content from './pages/Content.jsx'
 import Analytics from './pages/Analytics.jsx'
 import Novel from './pages/Novel.jsx'
@@ -10,6 +11,7 @@ import Assist from './pages/Assist.jsx'
 
 const TABS = [
   { id: 'overview', label: '개요', icon: LayoutDashboard, component: Overview },
+  { id: 'nassol', label: '나는 SOLO', icon: Clapperboard, component: Nassol },
   { id: 'content', label: '콘텐츠', icon: FileText, component: Content },
   { id: 'assist', label: '수동모드', icon: UserCheck, component: Assist },
   { id: 'analytics', label: '분석', icon: BarChart2, component: Analytics },
@@ -20,7 +22,14 @@ const TABS = [
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('overview')
-  const [systemStatus, setSystemStatus] = useState('ok') // ok | warn | error
+  const [systemStatus, setSystemStatus] = useState('warn') // ok | warn | error
+
+  useEffect(() => {
+    fetch('/api/diagnostics')
+      .then(response => response.json())
+      .then(info => setSystemStatus(info.writing_status === 'missing_cli' || info.writing_status === 'unverified' ? 'warn' : 'ok'))
+      .catch(() => setSystemStatus('error'))
+  }, [])
 
   const ActiveComponent = TABS.find(t => t.id === activeTab)?.component || Overview
 

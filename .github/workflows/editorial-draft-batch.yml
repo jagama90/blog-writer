@@ -1,0 +1,56 @@
+name: Editorial draft batch (review only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_drafts:
+        description: "Maximum drafts (1-20)"
+        required: true
+        default: "20"
+      dry_run:
+        description: "Discover topics only (no AI cost)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  draft-batch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+      - name: Check repository is private before handling drafts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          python - <<'PY'
+          import json, os, urllib.request
+          request = urllib.request.Request("https://api.github.com/repos/" + os.environ["REPO"],
+              headers={"Authorization": "Bearer " + os.environ["GH_TOKEN"], "Accept": "application/vnd.github+json"})
+          with urllib.request.urlopen(request, timeout=15) as response:
+              repo = json.load(response)
+          private = repo.get("private") is True
+          if not private and os.environ["DRY_RUN"].lower() != "true":
+              raise SystemExit("Repository is public. Set it private before generating draft files.")
+          with open(os.environ["GITHUB_ENV"], "a") as env:
+              env.write("REPO_PRIVATE=" + str(private).lower() + "\n")
+          PY
+      - name: Generate verified-source review drafts
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: gpt-4o-mini
+        run: |
+          python automation/draft_batch.py --max-drafts "${{ inputs.max_drafts }}" ${{ inputs.dry_run && '--dry-run' || '' }}
+      - name: Upload private review bundle
+        if: ${{ !inputs.dry_run && success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: editorial-review-drafts
+          path: drafts/generated/
+          retention-days: 7
+          if-no-files-found: warn
